@@ -1,0 +1,35 @@
+name: Preparant a producció
+run-name: ${{ github.actor }} està pujant l'aplicació a PROD 🚀
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pujada-a-produccio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Obtenir codi del repositori
+        uses: actions/checkout@v4
+
+      - name: 🔍 Verificar variables d'entorn
+        run: |
+          echo "Usuari: ${{ secrets.PROD_USER }}"
+          echo "Servidor: ${{ secrets.PROD_HOST }}"
+      - name:  Pujar fitxers via SCP
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/deploy_key.pem
+          chmod 600 ~/deploy_key.pem
+          cd ${{ github.workspace }}
+          mkdir -p ./web
+          echo "Últim desplegament fet per GitHub Actions" > ./web/last_deploy.txt
+          date >> ./web/last_deploy.txt
+          scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/deploy_key.pem \
+            index.html projectes.html \
+            ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }}:/var/www/html/
+
+      - name: "🍏 Aquest job ha acabat"
+        run: |
+          echo "🍏 Aquest job ha acabat amb l'estat: ${{ job.status }}"
